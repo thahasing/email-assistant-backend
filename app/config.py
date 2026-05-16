@@ -4,6 +4,7 @@ Central application configuration.
 Values are read from real environment variables first, then from backend/.env
 for local development.
 """
+import os
 
 from functools import lru_cache
 
@@ -14,7 +15,7 @@ class Settings(BaseSettings):
     # Google OAuth 2.0
     google_client_id: str = ""
     google_client_secret: str = ""
-    google_redirect_uri: str = "http://localhost:8000/api/v1/auth/callback"
+    google_redirect_uri: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/v1/auth/callback")
     google_scopes: list[str] = [
         "https://www.googleapis.com/auth/gmail.readonly",
         "https://www.googleapis.com/auth/gmail.modify",
