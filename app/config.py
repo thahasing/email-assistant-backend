@@ -1,3 +1,4 @@
+import os
 """
 config.py
 =========
@@ -14,7 +15,7 @@ class Settings(BaseSettings):
     # Google OAuth 2.0
     google_client_id: str = ""
     google_client_secret: str = ""
-    google_redirect_uri: str = "http://localhost:8000/api/v1/auth/callback"
+    google_redirect_uri: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/v1/auth/callback")
 
     # Gmail scopes required by our app
     google_scopes: list[str] = [
