@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from app.db.database import get_db
@@ -21,6 +21,7 @@ def _build_flow():
             }
         },
         scopes=settings.google_scopes,
+        redirect_uri=settings.google_redirect_uri,
     )
 
 @router.get("/login")
