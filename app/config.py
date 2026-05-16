@@ -1,23 +1,20 @@
-import os
 """
-config.py
-=========
-Central configuration using Pydantic BaseSettings.
-All values are read from environment variables (or .env file).
-Import `settings` anywhere in the app — never read os.environ directly.
+Central application configuration.
+
+Values are read from real environment variables first, then from backend/.env
+for local development.
 """
 
-from pydantic_settings import BaseSettings
 from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     # Google OAuth 2.0
     google_client_id: str = ""
     google_client_secret: str = ""
-    google_redirect_uri: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/v1/auth/callback")
-
-    # Gmail scopes required by our app
+    google_redirect_uri: str = "http://localhost:8000/api/v1/auth/callback"
     google_scopes: list[str] = [
         "https://www.googleapis.com/auth/gmail.readonly",
         "https://www.googleapis.com/auth/gmail.modify",
@@ -31,13 +28,16 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:5173"
     database_url: str = "sqlite:///./email_assistant.db"
     environment: str = "development"
+    openai_api_key: str | None = None
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
 
-@lru_cache()  # Singleton — settings object is created once and reused
+@lru_cache
 def get_settings() -> Settings:
     return Settings()
 

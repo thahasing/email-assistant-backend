@@ -6,7 +6,7 @@ These are separate from the SQLAlchemy ORM models intentionally —
 we control exactly what fields are exposed to the frontend.
 """
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional
 
@@ -54,7 +54,7 @@ class EmailDetailResponse(BaseModel):
     to: Optional[str] = None
     cc: Optional[str] = None
     date: Optional[str] = None
-    labels: list[str] = []
+    labels: list[str] = Field(default_factory=list)
     label: Optional[str] = None
     confidence: Optional[float] = None
 
@@ -82,4 +82,4 @@ class AssistantCommandRequest(BaseModel):
 class AssistantCommandResponse(BaseModel):
     reply: str
     action: Optional[str] = None
-    metadata: dict = {}
+    metadata: dict = Field(default_factory=dict)

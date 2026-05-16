@@ -1,2 +1,5 @@
 #!/bin/bash
-python3.12 -m pip install -r requirements.txt
+set -o errexit
+
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
