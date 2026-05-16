@@ -5,6 +5,7 @@ Values are read from real environment variables first, then from backend/.env
 for local development.
 """
 import os
+import os
 
 from functools import lru_cache
 
@@ -26,7 +27,7 @@ class Settings(BaseSettings):
 
     # Application
     secret_key: str = "changeme"
-    frontend_url: str = "http://localhost:5173"
+    frontend_url: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
     database_url: str = "sqlite:///./email_assistant.db"
     environment: str = "development"
     openai_api_key: str | None = None
