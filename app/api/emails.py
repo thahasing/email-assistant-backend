@@ -5,6 +5,7 @@ Email sync, cleanup, and detail routes.
 """
 
 from datetime import datetime, timedelta, timezone
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -32,6 +33,7 @@ from app.utils.email_parser import extract_sender_email
 router = APIRouter(prefix="/emails", tags=["Emails"])
 
 FULL_MAILBOX_QUERY = "-in:trash"
+logger = logging.getLogger(__name__)
 
 
 def _has_label(email: Email, label: str) -> bool:
@@ -320,29 +322,51 @@ def cleanup_candidates(
 
 @router.get("/{email_id}", response_model=EmailDetailResponse)
 def get_email(email_id: str, db: Session = Depends(get_db)):
-    """Return stored metadata plus live Gmail body content for one email."""
+    """Return an email detail view, falling back to stored metadata if Gmail is unavailable."""
     email = db.query(Email).filter(Email.id == email_id).first()
     if not email:
         raise HTTPException(status_code=404, detail="Email not found")
 
     classification = db.query(Classification).filter(Classification.email_id == email_id).first()
 
+    detail = None
     try:
         detail = gmail_service.get_email_detail(email_id)
     except ValueError as exc:
-        raise HTTPException(status_code=401, detail=str(exc)) from exc
+        logger.info("Opening stored email %s because Gmail auth is unavailable: %s", email_id, exc)
+    except Exception as exc:
+        logger.warning("Opening stored email %s because live Gmail detail failed: %s", email_id, exc)
 
     log_action(email_id=email_id, action="open", db=db)
     refreshed = db.query(Email).filter(Email.id == email_id).first()
+    source = refreshed or email
+
+    if detail is None:
+        return EmailDetailResponse(
+            id=source.id,
+            thread_id=source.thread_id,
+            subject=source.subject or "(no subject)",
+            sender=source.sender or source.sender_email,
+            sender_email=source.sender_email,
+            snippet=source.snippet,
+            timestamp=source.timestamp,
+            body=source.snippet or "Full email body is not available yet. Reconnect Gmail and sync again to fetch the complete message.",
+            to=None,
+            cc=None,
+            date=source.timestamp.isoformat() if source.timestamp else None,
+            labels=list(filter(None, (source.labels or "").split(","))),
+            label=classification.label if classification else None,
+            confidence=classification.confidence if classification else None,
+        )
 
     return EmailDetailResponse(
-        id=email.id,
-        thread_id=email.thread_id,
+        id=source.id,
+        thread_id=source.thread_id,
         subject=detail["subject"],
         sender=detail["sender"],
         sender_email=extract_sender_email(detail["sender"]),
         snippet=detail["snippet"],
-        timestamp=refreshed.timestamp,
+        timestamp=source.timestamp,
         body=detail["body"] or detail["snippet"],
         to=detail["to"],
         cc=detail["cc"],
